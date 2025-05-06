@@ -1,0 +1,21 @@
+@startuml "ngu.nadag"
+class Identifikasjon {
+    lokalId: string
+    lokalNavnerom: string
+    version: Timestamp
+}
+class GU {
+    lokalId: Identifikasjon
+    område: Areal
+}
+class GB {
+    lokalId: Identifikasjon
+    posisjon: Posisjon
+}
+class GBU {
+    lokalId: Identifikasjon
+    posisjon: Posisjon
+}
+GU  *->  GB: borehull
+GB  *->  GBU: undersøkelser
+@enduml
