@@ -3,11 +3,11 @@ specification ngu.nadag
 import ngu.common
 
 type GU {
-  # lokalId: Identifikasjon
   @ "område": Areal
+  # lokalId: Identifikasjon
   borehull*: type GB {
-    # lokalId: Identifikasjon
     @ posisjon: Posisjon
+    # lokalId: Identifikasjon
     "undersøkelser"*: type GBU {
       # lokalId: Identifikasjon
       @ posisjon: Posisjon

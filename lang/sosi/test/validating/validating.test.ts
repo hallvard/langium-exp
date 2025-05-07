@@ -19,7 +19,7 @@ beforeAll(async () => {
     // await services.shared.workspace.WorkspaceManager.initializeWorkspace([]);
 });
 
-describe('Validating', () => {
+describe('Validating valid Specification', () => {
   
     test('check no Specification errors', async () => {
         document = await parse(`
@@ -46,24 +46,34 @@ describe('Validating', () => {
             }
         `);
 
-        expect(
-            // here we first check for validity of the parsed document object by means of the reusable function
-            //  'checkDocumentValid()' to sort out (critical) typos first,
-            // and then evaluate the diagnostics by converting them into human readable strings;
-            // note that 'toHaveLength()' works for arrays and strings alike ;-)
-            checkDocumentValid(document)
-        ).toBeUndefined();
+        expect(checkDocumentValid(document, true)).toHaveLength(0);
     });
 });
 
-function checkDocumentValid(document: LangiumDocument): string | undefined {
-    return document.parseResult.parserErrors.length && s`
-        Parser errors:
-          ${document.parseResult.parserErrors.map(e => e.message).join('\n  ')}
-    `
-        || document.parseResult.value === undefined && `ParseResult is 'undefined'.`
-        || !isSpecification(document.parseResult.value) && `Root AST object is a ${document.parseResult.value.$type}, expected a '${Specification}'.`
-        || undefined;
+describe('Validating types with wrong id property count', () => {
+  
+    test('check no Specification errors', async () => {
+        document = await parse(`
+            specification ngu.nadag
+            builtin String as java String
+            data type Id {
+              # name: String
+            }
+            type GU {
+              id: Id
+            }
+        `);
+
+        expect(checkDocumentValid(document, false)).toBeUndefined();
+        expect(checkDocumentValid(document, true)?.length).toBe(2);
+    });
+});
+
+function checkDocumentValid(document: LangiumDocument, includeDiagnostics : boolean): string[] | undefined {
+    return document.parseResult.parserErrors.length && document.parseResult.parserErrors.map(e => e.message)
+        || document.parseResult.value === undefined && [`ParseResult is 'undefined'.`]
+        || !isSpecification(document.parseResult.value) && [`Root AST object is a ${document.parseResult.value.$type}, expected a '${Specification}'.`]
+        || (includeDiagnostics ? document.diagnostics?.map(diagnosticToString) : undefined);
 }
 
 function diagnosticToString(d: Diagnostic) {
