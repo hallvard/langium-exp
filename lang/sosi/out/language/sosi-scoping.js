@@ -1,4 +1,5 @@
-import { DefaultScopeComputation, DefaultScopeProvider, MultiMap } from "langium";
+import { AstUtils, DefaultScopeComputation, DefaultScopeProvider, MultiMap } from "langium";
+import { isNamespace } from "./generated/ast.js";
 import { typeName } from "./sosi-utils.js";
 export class SosiScopeComputation extends DefaultScopeComputation {
     /**
@@ -37,21 +38,71 @@ export class SosiScopeComputation extends DefaultScopeComputation {
 }
 export class SosiScopeProvider extends DefaultScopeProvider {
     getScope(context) {
-        switch (context.container.$type) {
-            case 'Import':
-                if (context.property === 'namespace') {
-                }
-                break;
-            case 'CompositeType':
-                if (context.property === 'extends') {
-                }
-                break;
-            case 'TypeRef':
-                if (context.property === 'typeRef') {
-                }
-                break;
-        }
+        // log('SosiScopeProvider.getScope', context);
         return super.getScope(context);
+    }
+    getGlobalScope(referenceType, context) {
+        // replace with a scope that includes the imported namespace prefixes
+        const globalScope = super.getGlobalScope(referenceType, context);
+        const ns = AstUtils.getContainerOfType(context.container, isNamespace);
+        if (!ns) {
+            return globalScope;
+        }
+        const prefixes = ns.imports.map(imp => `${imp.namespace.$refText}.`);
+        return prefixes.length === 0 ? globalScope : new ScopeWithPrefixes(prefixes, globalScope);
+    }
+}
+class ScopeWithPrefixes {
+    constructor(prefixes, delegate) {
+        this.prefixes = prefixes;
+        this.delegate = delegate;
+    }
+    /**
+     * Looks up an element by its name, or, if the element is not found,
+     * with the prefixes.
+     *
+     * @param name The name of the element to look up
+     * @returns
+     */
+    getElement(name) {
+        var element = this.delegate.getElement(name);
+        if (!element) {
+            for (const prefix of this.prefixes) {
+                element = this.delegate.getElement(`${prefix}${name}`);
+                if (element) {
+                    break;
+                }
+            }
+        }
+        return element;
+    }
+    getAllElements() {
+        const allElements = this.delegate.getAllElements();
+        return allElements.flatMap(element => {
+            const name = element.name;
+            var unprefixedName = undefined;
+            for (const prefix of this.prefixes) {
+                if (name.startsWith(prefix)) {
+                    unprefixedName = name.substring(prefix.length);
+                    break;
+                }
+            }
+            return unprefixedName
+                ? [element, new AstNodeDescriptionWithAltName(element, unprefixedName)]
+                : element;
+        });
+    }
+}
+class AstNodeDescriptionWithAltName {
+    constructor(delegate, altName) {
+        this.node = delegate.node;
+        this.nameSegment = delegate.nameSegment;
+        this.selectionSegment = delegate.selectionSegment;
+        this.type = delegate.type;
+        this.documentUri = delegate.documentUri;
+        this.path = delegate.path;
+        // alternate name
+        this.name = altName;
     }
 }
 //# sourceMappingURL=sosi-scoping.js.map

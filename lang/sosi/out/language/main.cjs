@@ -3381,13 +3381,13 @@ var require_main2 = __commonJS({
         }
         DocumentUri3.is = is;
       })(DocumentUri2 || (exports3.DocumentUri = DocumentUri2 = {}));
-      var URI3;
-      (function(URI4) {
+      var URI4;
+      (function(URI5) {
         function is(value) {
           return typeof value === "string";
         }
-        URI4.is = is;
-      })(URI3 || (exports3.URI = URI3 = {}));
+        URI5.is = is;
+      })(URI4 || (exports3.URI = URI4 = {}));
       var integer2;
       (function(integer3) {
         integer3.MIN_VALUE = -2147483648;
@@ -4650,7 +4650,7 @@ var require_main2 = __commonJS({
       (function(WorkspaceFolder3) {
         function is(value) {
           var candidate = value;
-          return Is2.objectLiteral(candidate) && URI3.is(candidate.uri) && Is2.string(candidate.name);
+          return Is2.objectLiteral(candidate) && URI4.is(candidate.uri) && Is2.string(candidate.name);
         }
         WorkspaceFolder3.is = is;
       })(WorkspaceFolder2 || (exports3.WorkspaceFolder = WorkspaceFolder2 = {}));
@@ -22725,11 +22725,11 @@ var DocumentUri;
   DocumentUri2.is = is;
 })(DocumentUri || (DocumentUri = {}));
 var URI2;
-(function(URI3) {
+(function(URI4) {
   function is(value) {
     return typeof value === "string";
   }
-  URI3.is = is;
+  URI4.is = is;
 })(URI2 || (URI2 = {}));
 var integer;
 (function(integer2) {
@@ -32261,44 +32261,66 @@ var SosiScopeComputation = class extends DefaultScopeComputation {
 };
 var SosiScopeProvider = class extends DefaultScopeProvider {
   getScope(context) {
-    switch (context.container.$type) {
-      case "Import":
-        if (context.property === "namespace") {
-        }
-        break;
-      case "CompositeType":
-        if (context.property === "extends") {
-        }
-        break;
-      case "TypeRef":
-        if (context.property === "typeRef") {
-        }
-        break;
-    }
     return super.getScope(context);
   }
-};
-
-// src/language/sosi-linking.ts
-var SosiLinker = class extends DefaultLinker {
-  // try both original name and within imported namespaces
-  getCandidate(refInfo) {
-    const scope = this.scopeProvider.getScope(refInfo);
-    const refText = refInfo.reference.$refText;
-    const description = scope.getElement(refText) || this.tryImports(refText, refInfo.container, scope);
-    return description != null ? description : this.createLinkingError(refInfo);
+  getGlobalScope(referenceType, context) {
+    const globalScope = super.getGlobalScope(referenceType, context);
+    const ns = ast_utils_exports.getContainerOfType(context.container, isNamespace);
+    if (!ns) {
+      return globalScope;
+    }
+    const prefixes = ns.imports.map((imp) => `${imp.namespace.$refText}.`);
+    return prefixes.length === 0 ? globalScope : new ScopeWithPrefixes(prefixes, globalScope);
   }
-  tryImports(refText, context, scope) {
-    const namespace = ast_utils_exports.getContainerOfType(context, isNamespace);
-    if (namespace) {
-      for (const imp of namespace.imports) {
-        const description = scope.getElement(`${imp.namespace}.${refText}`);
-        if (description) {
-          return description;
+};
+var ScopeWithPrefixes = class {
+  constructor(prefixes, delegate) {
+    this.prefixes = prefixes;
+    this.delegate = delegate;
+  }
+  /**
+   * Looks up an element by its name, or, if the element is not found,
+   * with the prefixes.
+   *
+   * @param name The name of the element to look up
+   * @returns 
+   */
+  getElement(name) {
+    var element = this.delegate.getElement(name);
+    if (!element) {
+      for (const prefix of this.prefixes) {
+        element = this.delegate.getElement(`${prefix}${name}`);
+        if (element) {
+          break;
         }
       }
     }
-    return void 0;
+    return element;
+  }
+  getAllElements() {
+    const allElements = this.delegate.getAllElements();
+    return allElements.flatMap((element) => {
+      const name = element.name;
+      var unprefixedName = void 0;
+      for (const prefix of this.prefixes) {
+        if (name.startsWith(prefix)) {
+          unprefixedName = name.substring(prefix.length);
+          break;
+        }
+      }
+      return unprefixedName ? [element, new AstNodeDescriptionWithAltName(element, unprefixedName)] : element;
+    });
+  }
+};
+var AstNodeDescriptionWithAltName = class {
+  constructor(delegate, altName) {
+    this.node = delegate.node;
+    this.nameSegment = delegate.nameSegment;
+    this.selectionSegment = delegate.selectionSegment;
+    this.type = delegate.type;
+    this.documentUri = delegate.documentUri;
+    this.path = delegate.path;
+    this.name = altName;
   }
 };
 
@@ -32309,8 +32331,8 @@ var SosiModule = {
   },
   references: {
     ScopeComputation: (services) => new SosiScopeComputation(services),
-    ScopeProvider: (services) => new SosiScopeProvider(services),
-    Linker: (services) => new SosiLinker(services)
+    ScopeProvider: (services) => new SosiScopeProvider(services)
+    // Linker: (services) => new SosiLinker(services)
   }
 };
 function createSosiServices(context) {

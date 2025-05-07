@@ -3,14 +3,14 @@ specification ngu.nadag
 import ngu.common
 
 type GU {
-  # lokalId: ngu.common.Identifikasjon
-  @ "område": ngu.common.Areal
+  # lokalId: Identifikasjon
+  @ "område": Areal
   borehull*: type GB {
-    # lokalId: ngu.common.Identifikasjon
-    @ posisjon: ngu.common.Posisjon
+    # lokalId: Identifikasjon
+    @ posisjon: Posisjon
     "undersøkelser"*: type GBU {
-      # lokalId: ngu.common.Identifikasjon
-      @ posisjon: ngu.common.Posisjon
+      # lokalId: Identifikasjon
+      @ posisjon: Posisjon
     }
   }
 }

@@ -3,7 +3,6 @@ import { createDefaultModule, createDefaultSharedModule, type DefaultSharedModul
 import { SosiGeneratedModule, SosiGeneratedSharedModule } from './generated/module.js';
 import { SosiValidator, registerValidationChecks } from './sosi-validator.js';
 import { SosiScopeComputation, SosiScopeProvider } from './sosi-scoping.js';
-import { SosiLinker } from './sosi-linking.js';
 
 /**
  * Declaration of custom services - add your own service classes here.

@@ -1,5 +1,5 @@
-import { AstNode, AstNodeDescription, DefaultScopeComputation, DefaultScopeProvider, LangiumDocument, MultiMap, PrecomputedScopes, ReferenceInfo, Scope } from "langium";
-import { Namespace, SosiAstType } from "./generated/ast.js";
+import { AstNode, AstNodeDescription, AstUtils, DefaultScopeComputation, DefaultScopeProvider, DocumentSegment, LangiumDocument, MultiMap, PrecomputedScopes, ReferenceInfo, Scope, Stream, URI } from "langium";
+import { isNamespace, Namespace } from "./generated/ast.js";
 import { typeName } from "./sosi-utils.js";
 
 export class SosiScopeComputation extends DefaultScopeComputation {
@@ -41,12 +41,84 @@ export class SosiScopeComputation extends DefaultScopeComputation {
 }
 
 export class SosiScopeProvider extends DefaultScopeProvider {
+
   override getScope(context: ReferenceInfo): Scope {
+    // log('SosiScopeProvider.getScope', context);
     return super.getScope(context);
   }
 
   override getGlobalScope(referenceType: string, context: ReferenceInfo): Scope {
     // replace with a scope that includes the imported namespace prefixes
-    return super.getGlobalScope(referenceType, context);
+    const globalScope = super.getGlobalScope(referenceType, context);
+    const ns = AstUtils.getContainerOfType(context.container, isNamespace)
+    if (! ns) {
+      return globalScope;
+    }
+    const prefixes = ns.imports.map(imp => `${imp.namespace.$refText}.`)
+    return prefixes.length === 0 ? globalScope : new ScopeWithPrefixes(prefixes, globalScope);
   }
 }
+
+class ScopeWithPrefixes implements Scope {
+  constructor(readonly prefixes: string[], readonly delegate: Scope) {
+  }
+
+  /**
+   * Looks up an element by its name, or, if the element is not found,
+   * with the prefixes.
+   *
+   * @param name The name of the element to look up
+   * @returns 
+   */
+  getElement(name: string): AstNodeDescription | undefined {
+    var element = this.delegate.getElement(name);
+    if (! element) {
+      for (const prefix of this.prefixes) {
+        element = this.delegate.getElement(`${prefix}${name}`);
+        if (element) {
+          break;
+        }
+      }
+    }
+    return element;
+  }
+
+  getAllElements(): Stream<AstNodeDescription> {
+    const allElements = this.delegate.getAllElements();
+    return allElements.flatMap(element => {
+      const name = element.name;
+      var unprefixedName = undefined
+      for (const prefix of this.prefixes) {
+        if (name.startsWith(prefix)) {
+          unprefixedName = name.substring(prefix.length);
+          break;
+        }
+      }
+      return unprefixedName
+          ? [element, new AstNodeDescriptionWithAltName(element, unprefixedName)]
+          : element;
+    })
+  }
+}
+
+class AstNodeDescriptionWithAltName implements AstNodeDescription {
+  node?: AstNode | undefined;
+  nameSegment?: DocumentSegment | undefined;
+  selectionSegment?: DocumentSegment | undefined;
+  type: string;
+  name: string;
+  documentUri: URI;
+  path: string;
+
+  constructor(delegate: AstNodeDescription, altName: string) {
+    this.node = delegate.node;
+    this.nameSegment = delegate.nameSegment;
+    this.selectionSegment = delegate.selectionSegment;
+    this.type = delegate.type;
+    this.documentUri = delegate.documentUri;
+    this.path = delegate.path;
+
+    // alternate name
+    this.name = altName;
+  }
+} 
