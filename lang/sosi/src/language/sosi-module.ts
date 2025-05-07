@@ -2,14 +2,16 @@ import { type Module, inject } from 'langium';
 import { createDefaultModule, createDefaultSharedModule, type DefaultSharedModuleContext, type LangiumServices, type LangiumSharedServices, type PartialLangiumServices } from 'langium/lsp';
 import { SosiGeneratedModule, SosiGeneratedSharedModule } from './generated/module.js';
 import { SosiValidator, registerValidationChecks } from './sosi-validator.js';
+import { SosiScopeComputation, SosiScopeProvider } from './sosi-scoping.js';
+import { SosiLinker } from './sosi-linking.js';
 
 /**
  * Declaration of custom services - add your own service classes here.
  */
 export type SosiAddedServices = {
-    validation: {
-        SosiValidator: SosiValidator
-    }
+  validation: {
+    SosiValidator: SosiValidator
+  }
 }
 
 /**
@@ -24,9 +26,14 @@ export type SosiServices = LangiumServices & SosiAddedServices
  * selected services, while the custom services must be fully specified.
  */
 export const SosiModule: Module<SosiServices, PartialLangiumServices & SosiAddedServices> = {
-    validation: {
-        SosiValidator: () => new SosiValidator()
-    }
+  validation: {
+    SosiValidator: () => new SosiValidator()
+  },
+  references: {
+    ScopeComputation: (services) => new SosiScopeComputation(services),
+    ScopeProvider: (services) => new SosiScopeProvider(services),
+    // Linker: (services) => new SosiLinker(services)
+  }
 };
 
 /**
@@ -45,24 +52,24 @@ export const SosiModule: Module<SosiServices, PartialLangiumServices & SosiAdded
  * @returns An object wrapping the shared services and the language-specific services
  */
 export function createSosiServices(context: DefaultSharedModuleContext): {
-    shared: LangiumSharedServices,
-    Sosi: SosiServices
+  shared: LangiumSharedServices,
+  Sosi: SosiServices
 } {
-    const shared = inject(
-        createDefaultSharedModule(context),
-        SosiGeneratedSharedModule
-    );
-    const Sosi = inject(
-        createDefaultModule({ shared }),
-        SosiGeneratedModule,
-        SosiModule
-    );
-    shared.ServiceRegistry.register(Sosi);
-    registerValidationChecks(Sosi);
-    if (!context.connection) {
-        // We don't run inside a language server
-        // Therefore, initialize the configuration provider instantly
-        shared.workspace.ConfigurationProvider.initialized({});
-    }
-    return { shared, Sosi };
+  const shared = inject(
+      createDefaultSharedModule(context),
+      SosiGeneratedSharedModule
+  );
+  const Sosi = inject(
+      createDefaultModule({ shared }),
+      SosiGeneratedModule,
+      SosiModule
+  );
+  shared.ServiceRegistry.register(Sosi);
+  registerValidationChecks(Sosi);
+  if (!context.connection) {
+    // We don't run inside a language server
+    // Therefore, initialize the configuration provider instantly
+    shared.workspace.ConfigurationProvider.initialized({});
+  }
+  return { shared, Sosi };
 }

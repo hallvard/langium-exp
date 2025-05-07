@@ -1,44 +1,52 @@
 grammar Sosi
 
-entry Specification:
-    'specification'
-    (description=STRING)? name = QName
-    (types += Type)*;
+entry Namespace: Package | Specification;
+
+Package: 'package' NamespaceFragment;
+Specification: 'specification' NamespaceFragment;
+
+fragment NamespaceFragment:
+  (description=STRING)? name = QName
+  (imports += Import)*
+  (types += Type)*;
+
+Import:
+  'import' namespace = [Namespace:QName];
 
 Name returns string: (ID | STRING);
 
 QName returns string:
-    Name ('.' Name)*;
+  Name ('.' Name)*;
 
 Type: BuiltinType | CompositeType;
 
 CompositeType:
-    (isAbstract ?= 'abstract')?
-    (kind = ('data' | 'feature'))?
-    'type'
-    (description=STRING)?
-    (name = Name)?
-    ('extends' (extends += [Type:Name]) (',' extends += [Type:Name])*)?
-    '{'
-      (properties += Property)+
-    '}'
-    (mappings += DomainMapping)*
+  (isAbstract ?= 'abstract')?
+  (kind = ('data' | 'feature'))?
+  'type'
+  (description=STRING)?
+  (name = Name)?
+  ('extends' (extends += [Type:QName]) (',' extends += [Type:QName])*)?
+  '{'
+    (properties += Property)+
+  '}'
+  (mappings += DomainMapping)*
   ;
 
 PropertyKind returns string: ('@' | '#' | '^');
 
 PropertyType: TypeRef | InlineType;
 
-TypeRef: typeRef = [Type:Name];
-InlineType: type = Type;
+TypeRef: typeRef = [Type:QName];
+InlineType: typeDef = Type;
 
 Property:
-    (kind = PropertyKind)?
-    (description=STRING)?
-    name = Name
-    (multiplicity = Multiplicity)? ':'
-    type = PropertyType
-    (mappings += DomainMapping)*
+  (kind = PropertyKind)?
+  (description=STRING)?
+  name = Name
+  (multiplicity = Multiplicity)? ':'
+  type = PropertyType
+  (mappings += DomainMapping)*
   ;
 
 Multiplicity: ZeroOrMoreMultiplicity | OneOrMoreMultiplicity | ZeroOrOneMultiplicity | SomeMultiplicity;

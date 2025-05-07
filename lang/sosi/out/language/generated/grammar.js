@@ -12,6 +12,60 @@ export const SosiGrammar = () => loadedSosiGrammar !== null && loadedSosiGrammar
     {
       "$type": "ParserRule",
       "entry": true,
+      "name": "Namespace",
+      "definition": {
+        "$type": "Alternatives",
+        "elements": [
+          {
+            "$type": "RuleCall",
+            "rule": {
+              "$ref": "#/rules@1"
+            },
+            "arguments": []
+          },
+          {
+            "$type": "RuleCall",
+            "rule": {
+              "$ref": "#/rules@2"
+            },
+            "arguments": []
+          }
+        ]
+      },
+      "definesHiddenTokens": false,
+      "fragment": false,
+      "hiddenTokens": [],
+      "parameters": [],
+      "wildcard": false
+    },
+    {
+      "$type": "ParserRule",
+      "name": "Package",
+      "definition": {
+        "$type": "Group",
+        "elements": [
+          {
+            "$type": "Keyword",
+            "value": "package"
+          },
+          {
+            "$type": "RuleCall",
+            "rule": {
+              "$ref": "#/rules@3"
+            },
+            "arguments": []
+          }
+        ]
+      },
+      "definesHiddenTokens": false,
+      "entry": false,
+      "fragment": false,
+      "hiddenTokens": [],
+      "parameters": [],
+      "wildcard": false
+    },
+    {
+      "$type": "ParserRule",
       "name": "Specification",
       "definition": {
         "$type": "Group",
@@ -21,13 +75,36 @@ export const SosiGrammar = () => loadedSosiGrammar !== null && loadedSosiGrammar
             "value": "specification"
           },
           {
+            "$type": "RuleCall",
+            "rule": {
+              "$ref": "#/rules@3"
+            },
+            "arguments": []
+          }
+        ]
+      },
+      "definesHiddenTokens": false,
+      "entry": false,
+      "fragment": false,
+      "hiddenTokens": [],
+      "parameters": [],
+      "wildcard": false
+    },
+    {
+      "$type": "ParserRule",
+      "fragment": true,
+      "name": "NamespaceFragment",
+      "definition": {
+        "$type": "Group",
+        "elements": [
+          {
             "$type": "Assignment",
             "feature": "description",
             "operator": "=",
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@20"
+                "$ref": "#/rules@24"
               },
               "arguments": []
             },
@@ -40,10 +117,23 @@ export const SosiGrammar = () => loadedSosiGrammar !== null && loadedSosiGrammar
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@2"
+                "$ref": "#/rules@6"
               },
               "arguments": []
             }
+          },
+          {
+            "$type": "Assignment",
+            "feature": "imports",
+            "operator": "+=",
+            "terminal": {
+              "$type": "RuleCall",
+              "rule": {
+                "$ref": "#/rules@4"
+              },
+              "arguments": []
+            },
+            "cardinality": "*"
           },
           {
             "$type": "Assignment",
@@ -52,7 +142,7 @@ export const SosiGrammar = () => loadedSosiGrammar !== null && loadedSosiGrammar
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@3"
+                "$ref": "#/rules@7"
               },
               "arguments": []
             },
@@ -61,6 +151,44 @@ export const SosiGrammar = () => loadedSosiGrammar !== null && loadedSosiGrammar
         ]
       },
       "definesHiddenTokens": false,
+      "entry": false,
+      "hiddenTokens": [],
+      "parameters": [],
+      "wildcard": false
+    },
+    {
+      "$type": "ParserRule",
+      "name": "Import",
+      "definition": {
+        "$type": "Group",
+        "elements": [
+          {
+            "$type": "Keyword",
+            "value": "import"
+          },
+          {
+            "$type": "Assignment",
+            "feature": "namespace",
+            "operator": "=",
+            "terminal": {
+              "$type": "CrossReference",
+              "type": {
+                "$ref": "#/rules@0"
+              },
+              "terminal": {
+                "$type": "RuleCall",
+                "rule": {
+                  "$ref": "#/rules@6"
+                },
+                "arguments": []
+              },
+              "deprecatedSyntax": false
+            }
+          }
+        ]
+      },
+      "definesHiddenTokens": false,
+      "entry": false,
       "fragment": false,
       "hiddenTokens": [],
       "parameters": [],
@@ -76,14 +204,14 @@ export const SosiGrammar = () => loadedSosiGrammar !== null && loadedSosiGrammar
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@18"
+              "$ref": "#/rules@22"
             },
             "arguments": []
           },
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@20"
+              "$ref": "#/rules@24"
             },
             "arguments": []
           }
@@ -106,7 +234,7 @@ export const SosiGrammar = () => loadedSosiGrammar !== null && loadedSosiGrammar
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@1"
+              "$ref": "#/rules@5"
             },
             "arguments": []
           },
@@ -120,7 +248,7 @@ export const SosiGrammar = () => loadedSosiGrammar !== null && loadedSosiGrammar
               {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@1"
+                  "$ref": "#/rules@5"
                 },
                 "arguments": []
               }
@@ -145,14 +273,14 @@ export const SosiGrammar = () => loadedSosiGrammar !== null && loadedSosiGrammar
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@15"
+              "$ref": "#/rules@19"
             },
             "arguments": []
           },
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@4"
+              "$ref": "#/rules@8"
             },
             "arguments": []
           }
@@ -211,7 +339,7 @@ export const SosiGrammar = () => loadedSosiGrammar !== null && loadedSosiGrammar
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@20"
+                "$ref": "#/rules@24"
               },
               "arguments": []
             },
@@ -224,7 +352,7 @@ export const SosiGrammar = () => loadedSosiGrammar !== null && loadedSosiGrammar
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@1"
+                "$ref": "#/rules@5"
               },
               "arguments": []
             },
@@ -244,12 +372,12 @@ export const SosiGrammar = () => loadedSosiGrammar !== null && loadedSosiGrammar
                 "terminal": {
                   "$type": "CrossReference",
                   "type": {
-                    "$ref": "#/rules@3"
+                    "$ref": "#/rules@7"
                   },
                   "terminal": {
                     "$type": "RuleCall",
                     "rule": {
-                      "$ref": "#/rules@1"
+                      "$ref": "#/rules@6"
                     },
                     "arguments": []
                   },
@@ -270,12 +398,12 @@ export const SosiGrammar = () => loadedSosiGrammar !== null && loadedSosiGrammar
                     "terminal": {
                       "$type": "CrossReference",
                       "type": {
-                        "$ref": "#/rules@3"
+                        "$ref": "#/rules@7"
                       },
                       "terminal": {
                         "$type": "RuleCall",
                         "rule": {
-                          "$ref": "#/rules@1"
+                          "$ref": "#/rules@6"
                         },
                         "arguments": []
                       },
@@ -299,7 +427,7 @@ export const SosiGrammar = () => loadedSosiGrammar !== null && loadedSosiGrammar
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@9"
+                "$ref": "#/rules@13"
               },
               "arguments": []
             },
@@ -316,7 +444,7 @@ export const SosiGrammar = () => loadedSosiGrammar !== null && loadedSosiGrammar
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@16"
+                "$ref": "#/rules@20"
               },
               "arguments": []
             },
@@ -368,14 +496,14 @@ export const SosiGrammar = () => loadedSosiGrammar !== null && loadedSosiGrammar
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@7"
+              "$ref": "#/rules@11"
             },
             "arguments": []
           },
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@8"
+              "$ref": "#/rules@12"
             },
             "arguments": []
           }
@@ -398,12 +526,12 @@ export const SosiGrammar = () => loadedSosiGrammar !== null && loadedSosiGrammar
         "terminal": {
           "$type": "CrossReference",
           "type": {
-            "$ref": "#/rules@3"
+            "$ref": "#/rules@7"
           },
           "terminal": {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@1"
+              "$ref": "#/rules@6"
             },
             "arguments": []
           },
@@ -422,12 +550,12 @@ export const SosiGrammar = () => loadedSosiGrammar !== null && loadedSosiGrammar
       "name": "InlineType",
       "definition": {
         "$type": "Assignment",
-        "feature": "type",
+        "feature": "typeDef",
         "operator": "=",
         "terminal": {
           "$type": "RuleCall",
           "rule": {
-            "$ref": "#/rules@3"
+            "$ref": "#/rules@7"
           },
           "arguments": []
         }
@@ -452,7 +580,7 @@ export const SosiGrammar = () => loadedSosiGrammar !== null && loadedSosiGrammar
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@5"
+                "$ref": "#/rules@9"
               },
               "arguments": []
             },
@@ -465,7 +593,7 @@ export const SosiGrammar = () => loadedSosiGrammar !== null && loadedSosiGrammar
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@20"
+                "$ref": "#/rules@24"
               },
               "arguments": []
             },
@@ -478,7 +606,7 @@ export const SosiGrammar = () => loadedSosiGrammar !== null && loadedSosiGrammar
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@1"
+                "$ref": "#/rules@5"
               },
               "arguments": []
             }
@@ -490,7 +618,7 @@ export const SosiGrammar = () => loadedSosiGrammar !== null && loadedSosiGrammar
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@10"
+                "$ref": "#/rules@14"
               },
               "arguments": []
             },
@@ -507,7 +635,7 @@ export const SosiGrammar = () => loadedSosiGrammar !== null && loadedSosiGrammar
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@6"
+                "$ref": "#/rules@10"
               },
               "arguments": []
             }
@@ -519,7 +647,7 @@ export const SosiGrammar = () => loadedSosiGrammar !== null && loadedSosiGrammar
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@16"
+                "$ref": "#/rules@20"
               },
               "arguments": []
             },
@@ -543,28 +671,28 @@ export const SosiGrammar = () => loadedSosiGrammar !== null && loadedSosiGrammar
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@11"
+              "$ref": "#/rules@15"
             },
             "arguments": []
           },
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@12"
+              "$ref": "#/rules@16"
             },
             "arguments": []
           },
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@13"
+              "$ref": "#/rules@17"
             },
             "arguments": []
           },
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@14"
+              "$ref": "#/rules@18"
             },
             "arguments": []
           }
@@ -652,7 +780,7 @@ export const SosiGrammar = () => loadedSosiGrammar !== null && loadedSosiGrammar
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@19"
+              "$ref": "#/rules@23"
             },
             "arguments": []
           },
@@ -670,7 +798,7 @@ export const SosiGrammar = () => loadedSosiGrammar !== null && loadedSosiGrammar
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@19"
+                    "$ref": "#/rules@23"
                   },
                   "arguments": []
                 },
@@ -708,7 +836,7 @@ export const SosiGrammar = () => loadedSosiGrammar !== null && loadedSosiGrammar
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@1"
+                "$ref": "#/rules@5"
               },
               "arguments": []
             },
@@ -721,7 +849,7 @@ export const SosiGrammar = () => loadedSosiGrammar !== null && loadedSosiGrammar
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@16"
+                "$ref": "#/rules@20"
               },
               "arguments": []
             },
@@ -753,7 +881,7 @@ export const SosiGrammar = () => loadedSosiGrammar !== null && loadedSosiGrammar
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@2"
+                "$ref": "#/rules@6"
               },
               "arguments": []
             }
@@ -768,14 +896,14 @@ export const SosiGrammar = () => loadedSosiGrammar !== null && loadedSosiGrammar
                 {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@2"
+                    "$ref": "#/rules@6"
                   },
                   "arguments": []
                 },
                 {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@20"
+                    "$ref": "#/rules@24"
                   },
                   "arguments": []
                 }

@@ -2,6 +2,8 @@ import { inject } from 'langium';
 import { createDefaultModule, createDefaultSharedModule } from 'langium/lsp';
 import { SosiGeneratedModule, SosiGeneratedSharedModule } from './generated/module.js';
 import { SosiValidator, registerValidationChecks } from './sosi-validator.js';
+import { SosiScopeComputation, SosiScopeProvider } from './sosi-scoping.js';
+import { SosiLinker } from './sosi-linking.js';
 /**
  * Dependency injection module that overrides Langium default services and contributes the
  * declared custom services. The Langium defaults can be partially specified to override only
@@ -10,6 +12,11 @@ import { SosiValidator, registerValidationChecks } from './sosi-validator.js';
 export const SosiModule = {
     validation: {
         SosiValidator: () => new SosiValidator()
+    },
+    references: {
+        ScopeComputation: (services) => new SosiScopeComputation(services),
+        ScopeProvider: (services) => new SosiScopeProvider(services),
+        Linker: (services) => new SosiLinker(services)
     }
 };
 /**

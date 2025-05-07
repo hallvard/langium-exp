@@ -105,8 +105,8 @@ function checkPropertyWithTypeRef(name: string, type: CompositeType, expectedTyp
 
 function findInlineType(name: string, predicate: (item:any ) => boolean, type: CompositeType): Type | undefined {
   for (const prop of type.properties) {
-    if (isInlineType(prop.type) && prop.type.type.name == name) {
-      return prop.type.type;
+    if (isInlineType(prop.type) && prop.type.typeDef.name == name) {
+      return prop.type.typeDef;
     }
   }
   return undefined;

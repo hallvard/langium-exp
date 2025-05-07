@@ -36,6 +36,8 @@ export type SosiKeywordNames =
     | "data"
     | "extends"
     | "feature"
+    | "import"
+    | "package"
     | "specification"
     | "type"
     | "{"
@@ -55,6 +57,14 @@ export type Name = string;
 
 export function isName(item: unknown): item is Name {
     return (typeof item === 'string' && (/[_a-zA-Z][\w_]*/.test(item) || /"(\\.|[^"\\])*"|'(\\.|[^'\\])*'/.test(item)));
+}
+
+export type Namespace = Package | Specification;
+
+export const Namespace = 'Namespace';
+
+export function isNamespace(item: unknown): item is Namespace {
+    return reflection.isInstance(item, Namespace);
 }
 
 export type PropertyKind = '#' | '@' | '^';
@@ -86,7 +96,7 @@ export function isType(item: unknown): item is Type {
 }
 
 export interface BuiltinType extends langium.AstNode {
-    readonly $container: InlineType | Specification;
+    readonly $container: InlineType | Package | Specification;
     readonly $type: 'BuiltinType';
     mappings: Array<DomainMapping>;
     name?: Name;
@@ -99,7 +109,7 @@ export function isBuiltinType(item: unknown): item is BuiltinType {
 }
 
 export interface CompositeType extends langium.AstNode {
-    readonly $container: InlineType | Specification;
+    readonly $container: InlineType | Package | Specification;
     readonly $type: 'CompositeType';
     description?: string;
     extends: Array<langium.Reference<Type>>;
@@ -129,10 +139,22 @@ export function isDomainMapping(item: unknown): item is DomainMapping {
     return reflection.isInstance(item, DomainMapping);
 }
 
+export interface Import extends langium.AstNode {
+    readonly $container: Package | Specification;
+    readonly $type: 'Import';
+    namespace: langium.Reference<Namespace>;
+}
+
+export const Import = 'Import';
+
+export function isImport(item: unknown): item is Import {
+    return reflection.isInstance(item, Import);
+}
+
 export interface InlineType extends langium.AstNode {
     readonly $container: Property;
     readonly $type: 'InlineType';
-    type: Type;
+    typeDef: Type;
 }
 
 export const InlineType = 'InlineType';
@@ -151,6 +173,20 @@ export const OneOrMoreMultiplicity = 'OneOrMoreMultiplicity';
 
 export function isOneOrMoreMultiplicity(item: unknown): item is OneOrMoreMultiplicity {
     return reflection.isInstance(item, OneOrMoreMultiplicity);
+}
+
+export interface Package extends langium.AstNode {
+    readonly $type: 'Package';
+    description?: string;
+    imports: Array<Import>;
+    name: QName;
+    types: Array<Type>;
+}
+
+export const Package = 'Package';
+
+export function isPackage(item: unknown): item is Package {
+    return reflection.isInstance(item, Package);
 }
 
 export interface Property extends langium.AstNode {
@@ -186,6 +222,7 @@ export function isSomeMultiplicity(item: unknown): item is SomeMultiplicity {
 export interface Specification extends langium.AstNode {
     readonly $type: 'Specification';
     description?: string;
+    imports: Array<Import>;
     name: QName;
     types: Array<Type>;
 }
@@ -236,9 +273,12 @@ export type SosiAstType = {
     BuiltinType: BuiltinType
     CompositeType: CompositeType
     DomainMapping: DomainMapping
+    Import: Import
     InlineType: InlineType
     Multiplicity: Multiplicity
+    Namespace: Namespace
     OneOrMoreMultiplicity: OneOrMoreMultiplicity
+    Package: Package
     Property: Property
     PropertyType: PropertyType
     SomeMultiplicity: SomeMultiplicity
@@ -252,7 +292,7 @@ export type SosiAstType = {
 export class SosiAstReflection extends langium.AbstractAstReflection {
 
     getAllTypes(): string[] {
-        return [BuiltinType, CompositeType, DomainMapping, InlineType, Multiplicity, OneOrMoreMultiplicity, Property, PropertyType, SomeMultiplicity, Specification, Type, TypeRef, ZeroOrMoreMultiplicity, ZeroOrOneMultiplicity];
+        return [BuiltinType, CompositeType, DomainMapping, Import, InlineType, Multiplicity, Namespace, OneOrMoreMultiplicity, Package, Property, PropertyType, SomeMultiplicity, Specification, Type, TypeRef, ZeroOrMoreMultiplicity, ZeroOrOneMultiplicity];
     }
 
     protected override computeIsSubtype(subtype: string, supertype: string): boolean {
@@ -271,6 +311,10 @@ export class SosiAstReflection extends langium.AbstractAstReflection {
             case ZeroOrOneMultiplicity: {
                 return this.isSubtype(Multiplicity, supertype);
             }
+            case Package:
+            case Specification: {
+                return this.isSubtype(Namespace, supertype);
+            }
             default: {
                 return false;
             }
@@ -283,6 +327,9 @@ export class SosiAstReflection extends langium.AbstractAstReflection {
             case 'CompositeType:extends':
             case 'TypeRef:typeRef': {
                 return Type;
+            }
+            case 'Import:namespace': {
+                return Namespace;
             }
             default: {
                 throw new Error(`${referenceId} is not a valid reference id.`);
@@ -324,11 +371,19 @@ export class SosiAstReflection extends langium.AbstractAstReflection {
                     ]
                 };
             }
+            case Import: {
+                return {
+                    name: Import,
+                    properties: [
+                        { name: 'namespace' }
+                    ]
+                };
+            }
             case InlineType: {
                 return {
                     name: InlineType,
                     properties: [
-                        { name: 'type' }
+                        { name: 'typeDef' }
                     ]
                 };
             }
@@ -337,6 +392,17 @@ export class SosiAstReflection extends langium.AbstractAstReflection {
                     name: OneOrMoreMultiplicity,
                     properties: [
                         { name: 'spec' }
+                    ]
+                };
+            }
+            case Package: {
+                return {
+                    name: Package,
+                    properties: [
+                        { name: 'description' },
+                        { name: 'imports', defaultValue: [] },
+                        { name: 'name' },
+                        { name: 'types', defaultValue: [] }
                     ]
                 };
             }
@@ -367,6 +433,7 @@ export class SosiAstReflection extends langium.AbstractAstReflection {
                     name: Specification,
                     properties: [
                         { name: 'description' },
+                        { name: 'imports', defaultValue: [] },
                         { name: 'name' },
                         { name: 'types', defaultValue: [] }
                     ]

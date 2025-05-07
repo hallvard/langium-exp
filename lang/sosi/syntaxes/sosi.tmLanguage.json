@@ -10,7 +10,7 @@
     },
     {
       "name": "keyword.control.sosi",
-      "match": "\\b(abstract|as|builtin|data|extends|feature|specification|type)\\b"
+      "match": "\\b(abstract|as|builtin|data|extends|feature|import|package|specification|type)\\b"
     },
     {
       "name": "string.quoted.double.sosi",

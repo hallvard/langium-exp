@@ -1,0 +1,18 @@
+package ngu.common
+
+builtin string as java String
+builtin int as java int
+builtin Timestamp as java long
+builtin Posisjon as java geo.Geometry
+builtin Areal as java geo.Geometry
+
+data type Identifikasjon {
+  "Navn, må være unikt innen navnerom"
+  lokalId : string as java java.util.StringBuilder
+
+  "Navenrom, må være globalt unikt"
+  lokalNavnerom : string
+
+  "Versjonsnr, må være monotont økende, f.eks. et tidsstempel"
+  version: Timestamp
+}

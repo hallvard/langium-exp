@@ -30986,13 +30986,22 @@ var import_node2 = __toESM(require_node3(), 1);
 
 // src/language/generated/ast.ts
 var Multiplicity = "Multiplicity";
+var Namespace = "Namespace";
+function isNamespace(item) {
+  return reflection2.isInstance(item, Namespace);
+}
 var PropertyType = "PropertyType";
 var Type2 = "Type";
 var BuiltinType = "BuiltinType";
 var CompositeType = "CompositeType";
 var DomainMapping = "DomainMapping";
+var Import = "Import";
 var InlineType = "InlineType";
+function isInlineType(item) {
+  return reflection2.isInstance(item, InlineType);
+}
 var OneOrMoreMultiplicity = "OneOrMoreMultiplicity";
+var Package = "Package";
 var Property = "Property";
 var SomeMultiplicity = "SomeMultiplicity";
 var Specification = "Specification";
@@ -31001,7 +31010,7 @@ var ZeroOrMoreMultiplicity = "ZeroOrMoreMultiplicity";
 var ZeroOrOneMultiplicity = "ZeroOrOneMultiplicity";
 var SosiAstReflection = class extends AbstractAstReflection {
   getAllTypes() {
-    return [BuiltinType, CompositeType, DomainMapping, InlineType, Multiplicity, OneOrMoreMultiplicity, Property, PropertyType, SomeMultiplicity, Specification, Type2, TypeRef, ZeroOrMoreMultiplicity, ZeroOrOneMultiplicity];
+    return [BuiltinType, CompositeType, DomainMapping, Import, InlineType, Multiplicity, Namespace, OneOrMoreMultiplicity, Package, Property, PropertyType, SomeMultiplicity, Specification, Type2, TypeRef, ZeroOrMoreMultiplicity, ZeroOrOneMultiplicity];
   }
   computeIsSubtype(subtype, supertype) {
     switch (subtype) {
@@ -31019,6 +31028,10 @@ var SosiAstReflection = class extends AbstractAstReflection {
       case ZeroOrOneMultiplicity: {
         return this.isSubtype(Multiplicity, supertype);
       }
+      case Package:
+      case Specification: {
+        return this.isSubtype(Namespace, supertype);
+      }
       default: {
         return false;
       }
@@ -31030,6 +31043,9 @@ var SosiAstReflection = class extends AbstractAstReflection {
       case "CompositeType:extends":
       case "TypeRef:typeRef": {
         return Type2;
+      }
+      case "Import:namespace": {
+        return Namespace;
       }
       default: {
         throw new Error(`${referenceId} is not a valid reference id.`);
@@ -31070,11 +31086,19 @@ var SosiAstReflection = class extends AbstractAstReflection {
           ]
         };
       }
+      case Import: {
+        return {
+          name: Import,
+          properties: [
+            { name: "namespace" }
+          ]
+        };
+      }
       case InlineType: {
         return {
           name: InlineType,
           properties: [
-            { name: "type" }
+            { name: "typeDef" }
           ]
         };
       }
@@ -31083,6 +31107,17 @@ var SosiAstReflection = class extends AbstractAstReflection {
           name: OneOrMoreMultiplicity,
           properties: [
             { name: "spec" }
+          ]
+        };
+      }
+      case Package: {
+        return {
+          name: Package,
+          properties: [
+            { name: "description" },
+            { name: "imports", defaultValue: [] },
+            { name: "name" },
+            { name: "types", defaultValue: [] }
           ]
         };
       }
@@ -31113,6 +31148,7 @@ var SosiAstReflection = class extends AbstractAstReflection {
           name: Specification,
           properties: [
             { name: "description" },
+            { name: "imports", defaultValue: [] },
             { name: "name" },
             { name: "types", defaultValue: [] }
           ]
@@ -31163,6 +31199,60 @@ var SosiGrammar = () => loadedSosiGrammar != null ? loadedSosiGrammar : loadedSo
     {
       "$type": "ParserRule",
       "entry": true,
+      "name": "Namespace",
+      "definition": {
+        "$type": "Alternatives",
+        "elements": [
+          {
+            "$type": "RuleCall",
+            "rule": {
+              "$ref": "#/rules@1"
+            },
+            "arguments": []
+          },
+          {
+            "$type": "RuleCall",
+            "rule": {
+              "$ref": "#/rules@2"
+            },
+            "arguments": []
+          }
+        ]
+      },
+      "definesHiddenTokens": false,
+      "fragment": false,
+      "hiddenTokens": [],
+      "parameters": [],
+      "wildcard": false
+    },
+    {
+      "$type": "ParserRule",
+      "name": "Package",
+      "definition": {
+        "$type": "Group",
+        "elements": [
+          {
+            "$type": "Keyword",
+            "value": "package"
+          },
+          {
+            "$type": "RuleCall",
+            "rule": {
+              "$ref": "#/rules@3"
+            },
+            "arguments": []
+          }
+        ]
+      },
+      "definesHiddenTokens": false,
+      "entry": false,
+      "fragment": false,
+      "hiddenTokens": [],
+      "parameters": [],
+      "wildcard": false
+    },
+    {
+      "$type": "ParserRule",
       "name": "Specification",
       "definition": {
         "$type": "Group",
@@ -31172,13 +31262,36 @@ var SosiGrammar = () => loadedSosiGrammar != null ? loadedSosiGrammar : loadedSo
             "value": "specification"
           },
           {
+            "$type": "RuleCall",
+            "rule": {
+              "$ref": "#/rules@3"
+            },
+            "arguments": []
+          }
+        ]
+      },
+      "definesHiddenTokens": false,
+      "entry": false,
+      "fragment": false,
+      "hiddenTokens": [],
+      "parameters": [],
+      "wildcard": false
+    },
+    {
+      "$type": "ParserRule",
+      "fragment": true,
+      "name": "NamespaceFragment",
+      "definition": {
+        "$type": "Group",
+        "elements": [
+          {
             "$type": "Assignment",
             "feature": "description",
             "operator": "=",
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@20"
+                "$ref": "#/rules@24"
               },
               "arguments": []
             },
@@ -31191,10 +31304,23 @@ var SosiGrammar = () => loadedSosiGrammar != null ? loadedSosiGrammar : loadedSo
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@2"
+                "$ref": "#/rules@6"
               },
               "arguments": []
             }
+          },
+          {
+            "$type": "Assignment",
+            "feature": "imports",
+            "operator": "+=",
+            "terminal": {
+              "$type": "RuleCall",
+              "rule": {
+                "$ref": "#/rules@4"
+              },
+              "arguments": []
+            },
+            "cardinality": "*"
           },
           {
             "$type": "Assignment",
@@ -31203,7 +31329,7 @@ var SosiGrammar = () => loadedSosiGrammar != null ? loadedSosiGrammar : loadedSo
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@3"
+                "$ref": "#/rules@7"
               },
               "arguments": []
             },
@@ -31212,6 +31338,44 @@ var SosiGrammar = () => loadedSosiGrammar != null ? loadedSosiGrammar : loadedSo
         ]
       },
       "definesHiddenTokens": false,
+      "entry": false,
+      "hiddenTokens": [],
+      "parameters": [],
+      "wildcard": false
+    },
+    {
+      "$type": "ParserRule",
+      "name": "Import",
+      "definition": {
+        "$type": "Group",
+        "elements": [
+          {
+            "$type": "Keyword",
+            "value": "import"
+          },
+          {
+            "$type": "Assignment",
+            "feature": "namespace",
+            "operator": "=",
+            "terminal": {
+              "$type": "CrossReference",
+              "type": {
+                "$ref": "#/rules@0"
+              },
+              "terminal": {
+                "$type": "RuleCall",
+                "rule": {
+                  "$ref": "#/rules@6"
+                },
+                "arguments": []
+              },
+              "deprecatedSyntax": false
+            }
+          }
+        ]
+      },
+      "definesHiddenTokens": false,
+      "entry": false,
       "fragment": false,
       "hiddenTokens": [],
       "parameters": [],
@@ -31227,14 +31391,14 @@ var SosiGrammar = () => loadedSosiGrammar != null ? loadedSosiGrammar : loadedSo
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@18"
+              "$ref": "#/rules@22"
             },
             "arguments": []
           },
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@20"
+              "$ref": "#/rules@24"
             },
             "arguments": []
           }
@@ -31257,7 +31421,7 @@ var SosiGrammar = () => loadedSosiGrammar != null ? loadedSosiGrammar : loadedSo
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@1"
+              "$ref": "#/rules@5"
             },
             "arguments": []
           },
@@ -31271,7 +31435,7 @@ var SosiGrammar = () => loadedSosiGrammar != null ? loadedSosiGrammar : loadedSo
               {
                 "$type": "RuleCall",
                 "rule": {
-                  "$ref": "#/rules@1"
+                  "$ref": "#/rules@5"
                 },
                 "arguments": []
               }
@@ -31296,14 +31460,14 @@ var SosiGrammar = () => loadedSosiGrammar != null ? loadedSosiGrammar : loadedSo
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@15"
+              "$ref": "#/rules@19"
             },
             "arguments": []
           },
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@4"
+              "$ref": "#/rules@8"
             },
             "arguments": []
           }
@@ -31362,7 +31526,7 @@ var SosiGrammar = () => loadedSosiGrammar != null ? loadedSosiGrammar : loadedSo
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@20"
+                "$ref": "#/rules@24"
               },
               "arguments": []
             },
@@ -31375,7 +31539,7 @@ var SosiGrammar = () => loadedSosiGrammar != null ? loadedSosiGrammar : loadedSo
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@1"
+                "$ref": "#/rules@5"
               },
               "arguments": []
             },
@@ -31395,12 +31559,12 @@ var SosiGrammar = () => loadedSosiGrammar != null ? loadedSosiGrammar : loadedSo
                 "terminal": {
                   "$type": "CrossReference",
                   "type": {
-                    "$ref": "#/rules@3"
+                    "$ref": "#/rules@7"
                   },
                   "terminal": {
                     "$type": "RuleCall",
                     "rule": {
-                      "$ref": "#/rules@1"
+                      "$ref": "#/rules@6"
                     },
                     "arguments": []
                   },
@@ -31421,12 +31585,12 @@ var SosiGrammar = () => loadedSosiGrammar != null ? loadedSosiGrammar : loadedSo
                     "terminal": {
                       "$type": "CrossReference",
                       "type": {
-                        "$ref": "#/rules@3"
+                        "$ref": "#/rules@7"
                       },
                       "terminal": {
                         "$type": "RuleCall",
                         "rule": {
-                          "$ref": "#/rules@1"
+                          "$ref": "#/rules@6"
                         },
                         "arguments": []
                       },
@@ -31450,7 +31614,7 @@ var SosiGrammar = () => loadedSosiGrammar != null ? loadedSosiGrammar : loadedSo
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@9"
+                "$ref": "#/rules@13"
               },
               "arguments": []
             },
@@ -31467,7 +31631,7 @@ var SosiGrammar = () => loadedSosiGrammar != null ? loadedSosiGrammar : loadedSo
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@16"
+                "$ref": "#/rules@20"
               },
               "arguments": []
             },
@@ -31519,14 +31683,14 @@ var SosiGrammar = () => loadedSosiGrammar != null ? loadedSosiGrammar : loadedSo
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@7"
+              "$ref": "#/rules@11"
             },
             "arguments": []
           },
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@8"
+              "$ref": "#/rules@12"
             },
             "arguments": []
           }
@@ -31549,12 +31713,12 @@ var SosiGrammar = () => loadedSosiGrammar != null ? loadedSosiGrammar : loadedSo
         "terminal": {
           "$type": "CrossReference",
           "type": {
-            "$ref": "#/rules@3"
+            "$ref": "#/rules@7"
           },
           "terminal": {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@1"
+              "$ref": "#/rules@6"
             },
             "arguments": []
           },
@@ -31573,12 +31737,12 @@ var SosiGrammar = () => loadedSosiGrammar != null ? loadedSosiGrammar : loadedSo
       "name": "InlineType",
       "definition": {
         "$type": "Assignment",
-        "feature": "type",
+        "feature": "typeDef",
         "operator": "=",
         "terminal": {
           "$type": "RuleCall",
           "rule": {
-            "$ref": "#/rules@3"
+            "$ref": "#/rules@7"
           },
           "arguments": []
         }
@@ -31603,7 +31767,7 @@ var SosiGrammar = () => loadedSosiGrammar != null ? loadedSosiGrammar : loadedSo
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@5"
+                "$ref": "#/rules@9"
               },
               "arguments": []
             },
@@ -31616,7 +31780,7 @@ var SosiGrammar = () => loadedSosiGrammar != null ? loadedSosiGrammar : loadedSo
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@20"
+                "$ref": "#/rules@24"
               },
               "arguments": []
             },
@@ -31629,7 +31793,7 @@ var SosiGrammar = () => loadedSosiGrammar != null ? loadedSosiGrammar : loadedSo
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@1"
+                "$ref": "#/rules@5"
               },
               "arguments": []
             }
@@ -31641,7 +31805,7 @@ var SosiGrammar = () => loadedSosiGrammar != null ? loadedSosiGrammar : loadedSo
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@10"
+                "$ref": "#/rules@14"
               },
               "arguments": []
             },
@@ -31658,7 +31822,7 @@ var SosiGrammar = () => loadedSosiGrammar != null ? loadedSosiGrammar : loadedSo
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@6"
+                "$ref": "#/rules@10"
               },
               "arguments": []
             }
@@ -31670,7 +31834,7 @@ var SosiGrammar = () => loadedSosiGrammar != null ? loadedSosiGrammar : loadedSo
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@16"
+                "$ref": "#/rules@20"
               },
               "arguments": []
             },
@@ -31694,28 +31858,28 @@ var SosiGrammar = () => loadedSosiGrammar != null ? loadedSosiGrammar : loadedSo
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@11"
+              "$ref": "#/rules@15"
             },
             "arguments": []
           },
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@12"
+              "$ref": "#/rules@16"
             },
             "arguments": []
           },
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@13"
+              "$ref": "#/rules@17"
             },
             "arguments": []
           },
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@14"
+              "$ref": "#/rules@18"
             },
             "arguments": []
           }
@@ -31803,7 +31967,7 @@ var SosiGrammar = () => loadedSosiGrammar != null ? loadedSosiGrammar : loadedSo
           {
             "$type": "RuleCall",
             "rule": {
-              "$ref": "#/rules@19"
+              "$ref": "#/rules@23"
             },
             "arguments": []
           },
@@ -31821,7 +31985,7 @@ var SosiGrammar = () => loadedSosiGrammar != null ? loadedSosiGrammar : loadedSo
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@19"
+                    "$ref": "#/rules@23"
                   },
                   "arguments": []
                 },
@@ -31859,7 +32023,7 @@ var SosiGrammar = () => loadedSosiGrammar != null ? loadedSosiGrammar : loadedSo
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@1"
+                "$ref": "#/rules@5"
               },
               "arguments": []
             },
@@ -31872,7 +32036,7 @@ var SosiGrammar = () => loadedSosiGrammar != null ? loadedSosiGrammar : loadedSo
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@16"
+                "$ref": "#/rules@20"
               },
               "arguments": []
             },
@@ -31904,7 +32068,7 @@ var SosiGrammar = () => loadedSosiGrammar != null ? loadedSosiGrammar : loadedSo
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@2"
+                "$ref": "#/rules@6"
               },
               "arguments": []
             }
@@ -31919,14 +32083,14 @@ var SosiGrammar = () => loadedSosiGrammar != null ? loadedSosiGrammar : loadedSo
                 {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@2"
+                    "$ref": "#/rules@6"
                   },
                   "arguments": []
                 },
                 {
                   "$type": "RuleCall",
                   "rule": {
-                    "$ref": "#/rules@20"
+                    "$ref": "#/rules@24"
                   },
                   "arguments": []
                 }
@@ -32041,10 +32205,100 @@ function registerValidationChecks(services) {
   registry.register(checks, validator);
 }
 var SosiValidator = class {
-  checkSpecificationHasTypes(spec, accept) {
-    if (spec.types.length === 0) {
-      accept("warning", "Specification should have some types.", { node: spec, property: "types" });
+  checkSpecificationHasTypes(ns, accept) {
+    if (ns.types.length === 0) {
+      accept("warning", "A Namespace (package or specification) should have some types.", { node: ns, property: "types" });
     }
+  }
+};
+
+// src/language/sosi-utils.ts
+function typeName(type) {
+  if (type.name) {
+    return type.name;
+  }
+  const typeOwner = type.$container;
+  if (isInlineType(typeOwner)) {
+    const property2 = typeOwner.$container;
+    return `${typeName(property2.$container)}_${property2.name}`;
+  }
+  return "unknown";
+}
+
+// src/language/sosi-scoping.ts
+var SosiScopeComputation = class extends DefaultScopeComputation {
+  /**
+   * Export the namespace itself and 
+   * the top-level types using their fully qualified name.
+   *
+   * @param document The document to compute exports for
+   * @returns The list of exported descriptions
+   */
+  async computeExports(document) {
+    const exportedDescriptions = [];
+    const namespace = document.parseResult.value;
+    const rootName = namespace.name;
+    exportedDescriptions.push(this.descriptions.createDescription(namespace, rootName, document));
+    for (const type of namespace.types) {
+      const fqn = `${rootName}.${typeName(type)}`;
+      exportedDescriptions.push(this.descriptions.createDescription(type, fqn, document));
+    }
+    return exportedDescriptions;
+  }
+  /**
+   * Make top-level types available locally using their simple name.
+   *
+   * @param document The document to compute scopes for
+   * @returns the scopes for the document
+   */
+  async computeLocalScopes(document) {
+    const ns = document.parseResult.value;
+    const scopes = new MultiMap();
+    const localDescriptions = Array.from(ns.types).map((type) => this.descriptions.createDescription(type, typeName(type), document));
+    scopes.addAll(ns, localDescriptions);
+    return scopes;
+  }
+};
+var SosiScopeProvider = class extends DefaultScopeProvider {
+  getScope(context) {
+    switch (context.container.$type) {
+      case "Import":
+        if (context.property === "namespace") {
+        }
+        break;
+      case "CompositeType":
+        if (context.property === "extends") {
+        }
+        break;
+      case "TypeRef":
+        if (context.property === "typeRef") {
+        }
+        break;
+    }
+    return super.getScope(context);
+  }
+};
+
+// src/language/sosi-linking.ts
+var SosiLinker = class extends DefaultLinker {
+  // try both original name and within imported namespaces
+  getCandidate(refInfo) {
+    const scope = this.scopeProvider.getScope(refInfo);
+    const refText = refInfo.reference.$refText;
+    const description = scope.getElement(refText) || this.tryImports(refText, refInfo.container, scope);
+    return description != null ? description : this.createLinkingError(refInfo);
+  }
+  tryImports(refText, context, scope) {
+    const namespace = ast_utils_exports.getContainerOfType(context, isNamespace);
+    if (namespace) {
+      for (const imp of namespace.imports) {
+        const description = scope.getElement(`${imp.namespace}.${refText}`);
+        if (description) {
+          return description;
+        }
+      }
+    }
+    return void 0;
   }
 };
 
@@ -32052,6 +32306,11 @@ var SosiValidator = class {
 var SosiModule = {
   validation: {
     SosiValidator: () => new SosiValidator()
+  },
+  references: {
+    ScopeComputation: (services) => new SosiScopeComputation(services),
+    ScopeProvider: (services) => new SosiScopeProvider(services),
+    Linker: (services) => new SosiLinker(services)
   }
 };
 function createSosiServices(context) {

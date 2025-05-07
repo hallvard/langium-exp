@@ -1,7 +1,7 @@
 // Monarch syntax highlighting for the sosi language.
 export default {
     keywords: [
-        'abstract', 'as', 'builtin', 'data', 'extends', 'feature', 'specification', 'type'
+        'abstract', 'as', 'builtin', 'data', 'extends', 'feature', 'import', 'package', 'specification', 'type'
     ],
     operators: [
         '#', '*', '+', ',', '.', '..', ':', '?', '@', '^'

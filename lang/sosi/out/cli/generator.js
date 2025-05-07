@@ -3,6 +3,7 @@ import { expandToNode, joinToNode, toString } from 'langium/generate';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { extractDestinationAndName } from './cli-util.js';
+import { typeName } from '../language/sosi-utils.js';
 export function generatePlantuml(spec, filePath, destination) {
     const data = extractDestinationAndName(filePath, destination);
     const generatedFilePath = `${path.join(data.destination, data.name)}.puml`;
@@ -33,7 +34,7 @@ function addTypes(type, allTypes) {
     if (isCompositeType(type)) {
         for (const prop of type.properties) {
             if (isInlineType(prop.type)) {
-                addTypes(prop.type.type, allTypes);
+                addTypes(prop.type.typeDef, allTypes);
             }
         }
     }
@@ -94,20 +95,9 @@ function plantumlForProperty(prop) {
 function plantumlForRelation(rel) {
     return expandToNode `${rel.source} ${rel.sourceLabel} *-> ${rel.targetLabel} ${rel.target}: ${rel.label}`;
 }
-function typeName(type) {
-    if (type.name) {
-        return type.name;
-    }
-    const typeOwner = type.$container;
-    if (isInlineType(typeOwner)) {
-        const property = typeOwner.$container;
-        return `${typeName(property.$container)}_${property.name}`;
-    }
-    return "unknown";
-}
 function propertyType(prop) {
     if (isInlineType(prop.type)) {
-        return prop.type.type;
+        return prop.type.typeDef;
     }
     return prop.type.typeRef.ref;
 }
